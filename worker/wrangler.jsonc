@@ -11,7 +11,7 @@
   "vars": {
     // Comma-separated sites allowed to use this server, e.g. "https://mun-chamber.vercel.app".
     // "*" allows any site; lock it down once the frontend has its final address.
-    "ALLOWED_ORIGINS": "https://mun-chamber.vercel.app"
+    "ALLOWED_ORIGINS": "https://mun.ouratlas.co.in"
   },
   "observability": { "enabled": true },
   "dev": { "ip": "0.0.0.0", "port": 8787 }

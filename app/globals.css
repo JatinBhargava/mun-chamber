@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-un: var(--un);
+  --color-gold: var(--gold);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--display);
+}
+
+:root {
+  --ink: #0a1220;
+  --panel: #101b2e;
+  --line: #22314b;
+  --fg: #e7edf7;
+  --muted: #8ea0bd;
+  --un: #4b92db;
+  --gold: #d6ad55;
+  --display: "Source Serif 4", ui-serif, Georgia, serif;
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(75, 146, 219, 0.12), transparent),
+    var(--ink);
+  color: var(--fg);
+  min-height: 100dvh;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+/* Room templates */
+@keyframes seat-in { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.seat-in { transform-box: fill-box; transform-origin: center; animation: seat-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.35) both; }
+@keyframes beam { to { stroke-dashoffset: -24; } }
+.beam { animation: beam 0.8s linear infinite; }
+@keyframes room-in { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: none; } }
+.room-in { animation: room-in 0.5s ease-out both; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-slow { transform-box: view-box; transform-origin: 200px 200px; animation: spin 60s linear infinite; }
+.spin-rev { transform-box: view-box; transform-origin: 200px 200px; animation: spin 40s linear infinite reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .seat-in, .beam, .room-in, .spin-slow, .spin-rev { animation: none; }
+}

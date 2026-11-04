@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "mun-chamber-realtime",
+  "main": "index.ts",
+  "compatibility_date": "2026-09-01",
+  // One Durable Object per committee code. It holds that committee's state and everyone's live connection.
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "CommitteeRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CommitteeRoom"] }],
+  "vars": {
+    // Comma-separated sites allowed to use this server, e.g. "https://mun-chamber.vercel.app".
+    // "*" allows any site; lock it down once the frontend has its final address.
+    "ALLOWED_ORIGINS": "*"
+  },
+  "observability": { "enabled": true },
+  "dev": { "ip": "0.0.0.0", "port": 8787 }
+}

@@ -26,16 +26,16 @@ export function VoteBanner({ state, send }: { state: CommitteeView; send: Send }
   const isP5 = state.type === "SC" && !v.procedural && P5.includes(me?.country ?? "");
 
   return (
-    <div className="rounded-xl border-2 border-gold/60 bg-gold/[0.08] p-4">
+    <div className="rounded-2xl border-2 border-gold/60 bg-panel p-3" style={{ boxShadow: "0 3px 0 color-mix(in srgb, var(--gold) 45%, transparent)" }}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wider text-gold">
             {v.procedural ? "Procedural vote" : "Substantive vote"} · {v.threshold === "two_thirds" ? "two-thirds majority" : state.type === "SC" && !v.procedural ? "9 votes, no P5 veto" : "simple majority"}
             {v.rollCall && " · roll call"}
           </div>
-          <div className="mt-1 font-serif text-lg font-semibold">{v.label}</div>
+          <div className="mt-0.5 font-serif text-base font-extrabold leading-snug">{v.label}</div>
         </div>
-        <div className="tabular flex gap-3 font-mono text-sm">
+        <div className="tabular flex gap-3 rounded-lg bg-ink px-2.5 py-1 font-mono text-sm font-semibold">
           <span className="text-emerald-700">Yes {t.yes}</span>
           <span className="text-red-700">No {t.no}</span>
           {!v.procedural && <span className="text-muted">Abst. {t.abstain}</span>}
@@ -51,7 +51,7 @@ export function VoteBanner({ state, send }: { state: CommitteeView; send: Send }
       )}
 
       {canVote && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {options.map((b) => (
             <Button key={b} variant={myBallot === b ? (b === "yes" ? "primary" : b === "no" ? "danger" : "gold") : "outline"} disabled={!myTurn} onClick={() => send({ type: "vote_cast", ballot: b })}>
               {B_LABEL[b]}{b === "no" && isP5 ? " (veto)" : ""}
@@ -64,7 +64,7 @@ export function VoteBanner({ state, send }: { state: CommitteeView; send: Send }
       {!canVote && me?.role === "delegate" && <p className="mt-2 text-xs text-muted">You're not marked present, so you can't vote. Send the Chair a note.</p>}
 
       {(v.rollCall || chair) && (
-        <div className="mt-3 flex flex-wrap gap-1">
+        <div className="mt-2.5 flex flex-wrap gap-1">
           {voters.map((m) => {
             const b = v.ballots[m.id];
             return (
@@ -77,7 +77,7 @@ export function VoteBanner({ state, send }: { state: CommitteeView; send: Send }
       )}
 
       {chair && (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-2.5 flex justify-end">
           <Button variant="gold" onClick={() => send({ type: "vote_close" })}>Close vote and announce result</Button>
         </div>
       )}
@@ -97,7 +97,7 @@ export function VoteHistory({ state }: { state: CommitteeView }) {
 function VoteRow({ v, state }: { v: Vote; state: CommitteeView }) {
   const t = v.tally ?? { yes: 0, no: 0, abstain: 0 };
   return (
-    <li className="rounded-lg border border-line p-3 text-sm">
+    <li className="rounded-lg border border-line px-3 py-2 text-[13px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">{v.label}</span>
         <Badge tone={v.result === "passed" ? "green" : "red"}>{v.result === "passed" ? "Passed" : "Failed"}</Badge>

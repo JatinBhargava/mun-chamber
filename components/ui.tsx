@@ -7,9 +7,9 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 type Variant = "primary" | "gold" | "ghost" | "danger" | "outline";
 // Solid buttons get a darker "brick edge" underneath, made from their own colour.
 const EDGE: Partial<Record<Variant, string>> = {
-  primary: "0 4px 0 color-mix(in srgb, var(--un) 62%, black)",
-  gold: "0 4px 0 color-mix(in srgb, var(--gold) 62%, black)",
-  outline: "0 3px 0 var(--line)",
+  primary: "0 3px 0 color-mix(in srgb, var(--un) 62%, black)",
+  gold: "0 3px 0 color-mix(in srgb, var(--gold) 62%, black)",
+  outline: "0 2px 0 var(--line)",
 };
 export function Button({ variant = "outline", size = "md", className, style, ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "sm" | "md" }) {
   const v: Record<Variant, string> = {
@@ -24,8 +24,8 @@ export function Button({ variant = "outline", size = "md", className, style, ...
       {...p}
       style={{ boxShadow: EDGE[variant], ...style }}
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border font-bold transition active:translate-y-0.5 active:shadow-none disabled:cursor-not-allowed disabled:opacity-40",
-        size === "sm" ? "px-2.5 py-1 text-xs" : "px-4 py-2 text-sm",
+        "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border font-bold transition active:translate-y-0.5 active:shadow-none disabled:cursor-not-allowed disabled:opacity-40",
+        size === "sm" ? "h-7 rounded-lg px-2.5 text-xs" : "h-9 rounded-xl px-3.5 text-sm",
         v[variant],
         className,
       )}
@@ -33,18 +33,25 @@ export function Button({ variant = "outline", size = "md", className, style, ...
   );
 }
 
+export const SHADOW = { boxShadow: "0 3px 0 var(--line)" };
+
 export function Card({ title, right, children, className }: { title?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx("rounded-2xl border border-line bg-panel", className)} style={{ boxShadow: "0 5px 0 var(--line)" }}>
+    <section className={cx("rounded-2xl border border-line bg-panel", className)} style={SHADOW}>
       {(title || right) && (
-        <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-          <h3 className="text-lg font-extrabold leading-tight" style={{ fontFamily: "var(--display)" }}>{title}</h3>
+        <header className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-2">
+          <h3 className="text-[15px] font-extrabold leading-tight" style={{ fontFamily: "var(--display)" }}>{title}</h3>
           {right}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-3">{children}</div>
     </section>
   );
+}
+
+/** Small uppercase heading inside a card. */
+export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx("mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted", className)}>{children}</div>;
 }
 
 export function Badge({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "un" | "gold" | "green" | "red" }) {
@@ -58,7 +65,7 @@ export function Badge({ children, tone = "default" }: { children: ReactNode; ton
   return <span className={cx("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", t)}>{children}</span>;
 }
 
-const field = "w-full rounded-lg border border-line bg-ink/60 px-3 py-2 text-sm text-fg placeholder:text-muted/60 focus:border-un focus:outline-none";
+const field = "w-full rounded-lg border border-line bg-ink/60 px-2.5 py-1.5 text-sm text-fg placeholder:text-muted/60 focus:border-un focus:outline-none focus:ring-2 focus:ring-un/15 disabled:opacity-60";
 export const Input = ({ className, ...p }: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cx(field, className)} />;
 export const Textarea = ({ className, ...p }: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...p} className={cx(field, "resize-y", className)} />;
 export const Select = ({ className, ...p }: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={cx(field, className)} />;
@@ -93,7 +100,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-3 text-center text-sm text-muted/70">{children}</p>;
+  return <p className="py-2 text-center text-[13px] text-muted/70">{children}</p>;
 }
 
 export { cx };

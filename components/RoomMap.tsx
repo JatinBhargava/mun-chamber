@@ -61,7 +61,7 @@ function splitByCapacity(total: number, caps: number[]): number[] {
 // ---------------- templates ----------------
 
 const assembly: Def = {
-  w: 400, h: 215, maxH: 520, shape: "circle", nameplates: false, podium: null,
+  w: 400, h: 215, maxH: 380, shape: "circle", nameplates: false, podium: null,
   geo(n) {
     if (!n) return { seats: [], r: 12 };
     const rows = n <= 12 ? 2 : n <= 30 ? 3 : n <= 60 ? 4 : 5;
@@ -86,12 +86,13 @@ const assembly: Def = {
   Decor: ({ uid }) => (
     <>
       <defs>
-        <radialGradient id={`${uid}f`} cx="50%" cy="100%" r="75%">
+        <radialGradient id={`${uid}f`} gradientUnits="userSpaceOnUse" cx="200" cy="215" r="300">
           <stop offset="0" stopColor="var(--un)" stopOpacity="0.22" />
           <stop offset="1" stopColor="var(--un)" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <rect width="400" height="215" fill={`url(#${uid}f)`} />
+      {/* Larger than the drawing so the glow fades out past its edges instead of stopping at them. */}
+      <rect x={-600} y={-300} width={1600} height={900} fill={`url(#${uid}f)`} />
       {/* dome ribs */}
       {Array.from({ length: 9 }, (_, i) => {
         const a = Math.PI - (Math.PI * (i + 0.5)) / 9;
@@ -112,7 +113,7 @@ const assembly: Def = {
 };
 
 const council: Def = {
-  w: 400, h: 270, maxH: 560, shape: "square", nameplates: true, podium: { x: 200, y: 168, width: 150 },
+  w: 400, h: 270, maxH: 420, shape: "square", nameplates: true, podium: { x: 200, y: 168, width: 150 },
   geo(n) {
     const L = 110, R = 112, cx = 200, cy = 140, total = 2 * L + Math.PI * R;
     const at = (s: number): Seat => {
@@ -163,7 +164,7 @@ const council: Def = {
 };
 
 const roundtable: Def = {
-  w: 400, h: 400, maxH: 580, shape: "circle", nameplates: true, podium: { x: 200, y: 200, width: 150 },
+  w: 400, h: 400, maxH: 440, shape: "circle", nameplates: true, podium: { x: 200, y: 200, width: 150 },
   geo(n) {
     const slots = n + 1;
     const radii = slots <= 30 ? [142] : [134, 168];
@@ -200,7 +201,7 @@ const roundtable: Def = {
 };
 
 const arena: Def = {
-  w: 400, h: 400, maxH: 600, shape: "hex", nameplates: false, podium: { x: 200, y: 200, width: 160 },
+  w: 400, h: 400, maxH: 440, shape: "hex", nameplates: false, podium: { x: 200, y: 200, width: 160 },
   geo(n) {
     const tiers = [130, 158, 186];
     const slots = n + 1;
@@ -246,7 +247,7 @@ const arena: Def = {
 };
 
 const benches: Def = {
-  w: 400, h: 262, maxH: 480, shape: "square", nameplates: false, podium: null,
+  w: 400, h: 262, maxH: 360, shape: "square", nameplates: false, podium: null,
   geo(n) {
     const top = Math.ceil(n / 2), bottom = n - top;
     const rowsNeeded = clamp(Math.ceil(top / 13), 1, 4);
@@ -333,20 +334,43 @@ export default function RoomMap({ state, now, onSeat, hint }: { state: Committee
   const speakerSeat = speakerId ? seats[delegates.findIndex((d) => d.id === speakerId)] : undefined;
   const p = def.podium;
   const [figures, setFigures] = useFigurePref();
+  const [key, setKey] = useState(false);
   // Draw back rows first so figures in front overlap the ones behind them.
   const drawOrder = useMemo(() => seats.map((_, i) => i).filter((i) => i < delegates.length).sort((a, b) => seats[a].y - seats[b].y), [seats, delegates.length]);
 
   return (
     <div key={state.layout} className="room-in">
       <div className="relative mx-auto w-full" style={{ maxWidth: (def.maxH * def.w) / vh }}>
-        <button
-          onClick={() => setFigures(!figures)}
-          className="absolute right-0 top-0 z-10 rounded-full border border-line bg-panel/80 px-2.5 py-1 text-[11px] text-muted backdrop-blur transition hover:text-fg"
-          title="Switch between toy figures and simple seats (only on your screen)"
-        >
-          {figures ? "🧱 Figures" : "● Classic seats"}
-        </button>
-        <svg viewBox={`0 ${vy} ${def.w} ${vh}`} className="block w-full select-none" role="img" aria-label="Seating plan of the committee">
+        {hint && <span className="absolute left-0 top-0 z-10 hidden rounded-full border border-un/30 bg-panel/80 px-2.5 py-1 text-[11px] text-un backdrop-blur sm:block">{hint}</span>}
+        <div className="relative z-10 mb-1.5 flex justify-end gap-1 sm:absolute sm:right-0 sm:top-0 sm:mb-0">
+          <button onClick={() => setKey(!key)} aria-expanded={key} className={`${chip} ${key ? "text-fg" : ""}`} title="What the seats mean">Key</button>
+          <button onClick={() => setFigures(!figures)} className={chip} title="Switch between toy figures and simple seats (only on your screen)">
+            {figures ? "🧱 Figures" : "● Seats"}
+          </button>
+        </div>
+        {key && (
+          <div className="absolute right-0 top-8 z-20 w-60 max-w-full space-y-1.5 rounded-xl border border-line bg-panel/95 p-3 text-[11px] text-muted shadow-xl backdrop-blur" onClick={() => setKey(false)}>
+            {figures ? (
+              <>
+                <div>💬 Speaking: the desk mic light turns red</div>
+                <div><span className="text-gold">●</span> Gold pin: present and voting</div>
+                <div>🪑 Empty desk: not present yet</div>
+                <div>✋ Nameplate held up: wants the floor</div>
+                <div>🏷️ Gold nameplate: the Chair</div>
+                <div>Faded: offline</div>
+              </>
+            ) : (
+              <>
+                <Dot color="var(--un)" label="Present" />
+                <Dot color="var(--un)" ring label="Present and voting" />
+                <Dot color="var(--gold)" label="Speaking" />
+                <Dot color="transparent" label="Not present" />
+                <div>🪧 Placard raised · faded: offline</div>
+              </>
+            )}
+          </div>
+        )}
+        <svg viewBox={`0 ${vy} ${def.w} ${vh}`} overflow="visible" className="block w-full select-none" role="img" aria-label="Seating plan of the committee">
           <def.Decor uid={uid} geo={geo} />
 
           {p && speakerSeat && (
@@ -449,32 +473,14 @@ export default function RoomMap({ state, now, onSeat, hint }: { state: Committee
           </div>
         )}
       </div>
-      <div className={p ? "mt-3 sm:hidden" : state.layout === "benches" ? "mt-2" : "-mt-4 sm:-mt-10"}>
+      <div className={p ? "mt-2 sm:hidden" : state.layout === "benches" ? "mt-2" : "-mt-2 sm:-mt-5"}>
         <Podium state={state} now={now} />
-      </div>
-      <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-muted">
-        {figures ? (
-          <>
-            <span>💬 speaking (mic light turns red)</span>
-            <span><span className="text-gold">●</span> gold pin: present and voting</span>
-            <span>🪑 empty desk: not present</span>
-            <span>✋ nameplate held up: wants the floor</span>
-            <span>🏷️ gold nameplate: the Chair</span>
-          </>
-        ) : (
-          <>
-            <Dot color="var(--un)" label="Present" />
-            <Dot color="var(--un)" ring label="Present and voting" />
-            <Dot color="var(--gold)" label="Speaking" />
-            <Dot color="transparent" label="Not present" />
-            <span>🪧 placard raised</span>
-          </>
-        )}
-        {hint && <span className="text-un">{hint}</span>}
       </div>
     </div>
   );
 }
+
+const chip = "rounded-full border border-line bg-panel/80 px-2.5 py-1 text-[11px] text-muted backdrop-blur transition hover:text-fg";
 
 function Dot({ color, label, ring }: { color: string; label: string; ring?: boolean }) {
   return (

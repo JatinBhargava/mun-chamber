@@ -50,3 +50,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .seat-in, .beam, .room-in, .spin-slow, .spin-rev { animation: none; }
 }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

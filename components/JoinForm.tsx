@@ -6,12 +6,18 @@ import { api, saveSession } from "@/lib/client";
 import { flag } from "@/lib/countries";
 import { Button, Input, Label, Select } from "./ui";
 
+/** Accepts a bare code or a pasted invite link (…/room/K7QM2D) and returns the 6-character code. */
+function toCode(v: string) {
+  const fromLink = v.match(/\/room\/([A-Za-z0-9]{6})/)?.[1];
+  return (fromLink ?? v.replace(/[^A-Za-z0-9]/g, "")).toUpperCase().slice(0, 6);
+}
+
 interface Peek { name: string; type: string; countries: { name: string; iso?: string }[]; error?: string }
 
 /** `light` is for the white home page: darker status colours and a yellow brick button. */
 export default function JoinForm({ initialCode = "", onJoined, light }: { initialCode?: string; onJoined?: () => void; light?: boolean }) {
   const router = useRouter();
-  const [code, setCode] = useState(initialCode);
+  const [code, setCode] = useState(toCode(initialCode));
   const [peek, setPeek] = useState<Peek | null>(null);
   const [name, setName] = useState("");
   const [role, setRole] = useState<"delegate" | "observer">("delegate");
@@ -43,7 +49,7 @@ export default function JoinForm({ initialCode = "", onJoined, light }: { initia
     <div className="space-y-3">
       <div>
         <Label>Committee code</Label>
-        <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))} placeholder="e.g. K7QM2D" className="font-mono tracking-[0.3em] uppercase" />
+        <Input value={code} onChange={(e) => setCode(toCode(e.target.value))} placeholder="e.g. K7QM2D or paste the invite link" className="font-mono tracking-[0.3em] uppercase placeholder:tracking-normal" />
         {peek && <p className={`mt-1 text-xs ${light ? "font-semibold text-emerald-700" : "text-emerald-300"}`}>Found: {peek.name} ({peek.type === "SC" ? "Security Council" : peek.type === "GA" ? "General Assembly" : "Custom"})</p>}
       </div>
       <div>

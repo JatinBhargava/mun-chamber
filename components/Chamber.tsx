@@ -100,8 +100,8 @@ export default function Chamber({ code }: { code: string }) {
             {listening.length > 0 && !voice.audioBlocked && (
               <span className="hidden md:inline-flex"><Badge tone="green">🔊 {listening.map((m) => m?.role === "chair" ? "Chair" : m?.country).join(", ")}</Badge></span>
             )}
-            <button onClick={copyInvite} className="flex h-8 items-center gap-1.5 rounded-lg border-2 border-fg bg-panel px-2 font-mono text-[13px] font-bold tracking-widest transition hover:bg-fg hover:text-white" title="Copy invite link">
-              {copied ? "Copied!" : code}
+            <button onClick={copyInvite} className="flex h-8 items-center gap-1.5 rounded-lg border-2 border-fg bg-panel px-2 font-mono text-[13px] font-bold tracking-widest transition hover:bg-fg hover:text-white" title="Copy the invite link. People who open it go straight to this committee.">
+              {copied ? "Link copied" : code}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
             </button>
             <span className="hidden max-w-44 truncate sm:inline-flex"><Badge tone={chair ? "gold" : me?.role === "observer" ? "default" : "un"}>{identity}</Badge></span>

@@ -3,9 +3,15 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
+const description = "Run a Model UN committee online: roll call, speakers' list, caucuses, resolutions and voting, with live voice. Or practice solo with an AI Chair and four AI delegates.";
+
+// The share image comes from app/opengraph-image.png and app/twitter-image.png.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mun.ouratlas.co.in"),
   title: "MUN Chamber",
-  description: "Run a Model UN committee online: roll call, speakers' list, caucuses, resolutions and voting, with live voice.",
+  description,
+  openGraph: { title: "MUN Chamber", description, url: "/", siteName: "MUN Chamber", type: "website" },
+  twitter: { card: "summary_large_image", title: "MUN Chamber", description },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -71,7 +71,8 @@ export function DelegateBar({ state, send, voice }: { state: CommitteeView; send
 
 function FloorPanel({ state, send, voice }: { state: CommitteeView; send: Send; voice: Voice }) {
   const [text, setText] = useState("");
-  const [captions, setCaptions] = useState(false);
+  // In AI practice, captions are how the AI delegates hear a spoken speech, so they start on.
+  const [captions, setCaptions] = useState(!!state.practice);
   const [yieldTo, setYieldTo] = useState("");
   useTranscript(captions && voice.live && !voice.muted);
   const sp = state.speaker!;

@@ -31,6 +31,20 @@ Each committee code gets its own Durable Object: one small server that holds tha
 
 Durable Objects with SQLite storage are on Cloudflare's free plan.
 
+## AI practice rooms
+
+At `/practice`, a student can run a solo round with an AI Chair and four AI delegates, played by Claude Haiku 5.5. The round covers every stage of a normal committee: roll call, setting the agenda, opening speeches (with yields and Points of Information), a moderated caucus, an unmoderated caucus for working papers, draft resolutions, amendments, voting procedure with a roll call vote, and adjournment. It ends with personal feedback and an award (about 25 minutes).
+
+- The Cloudflare server runs the round (`worker/practice.ts`) through the same rules engine as normal committees. Claude writes the speeches, the caucus topic, the draft, the AI votes, replies to points and notes, and the feedback (`worker/ai.ts`).
+- AI speeches are read aloud with the browser's built-in voices. Spoken speeches from the student reach the AI through live captions.
+- **Setup:** add your Anthropic API key as a Cloudflare secret, then deploy:
+  ```bash
+  npx wrangler secret put ANTHROPIC_API_KEY -c worker/wrangler.jsonc
+  npm run deploy:live
+  ```
+  Locally, put `ANTHROPIC_API_KEY=...` in `worker/.dev.vars`. Without a key, `AI_MOCK=1` there gives canned AI answers so you can test the flow.
+- **Cost guard:** `PRACTICE_DAILY_LIMIT` in `worker/wrangler.jsonc` caps new practice rooms per day across the site (default 30), and each room makes at most 60 Claude calls.
+
 ## What it covers
 
 | Stage | In the app |

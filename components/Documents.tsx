@@ -46,7 +46,7 @@ function DocCard({ doc, state, send }: { doc: Doc; state: CommitteeView; send: S
   const chair = state.meId === state.chairId;
   const isSponsor = doc.sponsors.includes(state.meId);
   const isSignatory = doc.signatories.includes(state.meId);
-  const [open, setOpen] = useState(doc.status === "introduced" || isSponsor);
+  const [open, setOpen] = useState(doc.status === "introduced" || doc.status === "approved" || isSponsor);
   const [editing, setEditing] = useState(false);
   const [rollCall, setRollCall] = useState(false);
   const amendments = state.amendments.filter((a) => a.docId === doc.id);

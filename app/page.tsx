@@ -137,9 +137,14 @@ export default function Home() {
           <svg width="38" height="30" viewBox="0 0 40 32" aria-hidden><rect x="8" y="2" width="9" height="6" rx="2" fill="#b81f2e" /><rect x="23" y="2" width="9" height="6" rx="2" fill="#b81f2e" /><rect x="2" y="7" width="36" height="23" rx="5" fill="#d62839" /></svg>
           <span className="text-2xl font-extrabold" style={{ fontFamily: "var(--display)" }}>MUN Chamber</span>
         </a>
-        <a href="#join" className="rounded-xl border-2 border-[#10213a] px-4 py-2 text-base font-bold text-[#10213a] no-underline hover:bg-[#10213a] hover:text-white">
-          Have a code? Join
-        </a>
+        <nav className="flex items-center gap-2">
+          <a href="/practice" className="rounded-xl px-3 py-2 text-base font-bold text-[#15803d] no-underline hover:bg-[#15803d]/10">
+            🤖 Practice with AI
+          </a>
+          <a href="#join" className="rounded-xl border-2 border-[#10213a] px-4 py-2 text-base font-bold text-[#10213a] no-underline hover:bg-[#10213a] hover:text-white">
+            Have a code? Join
+          </a>
+        </nav>
       </header>
 
       {/* Hero */}
@@ -152,8 +157,11 @@ export default function Home() {
           Students represent countries, speak live into their own desk mic and vote on real resolutions from any device. You chair the whole committee from one screen.
         </p>
         <div className="mt-10 flex flex-col items-center gap-3.5">
-          <BrickLink href="#create" color="red">Open my committee</BrickLink>
-          <span className="text-[15px] text-[#44546d]">No sign-ups for anyone. Students join with a six-letter code.</span>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-6">
+            <BrickLink href="#create" color="red">Open my committee</BrickLink>
+            <BrickLink href="/practice" color="green">Practice with AI</BrickLink>
+          </div>
+          <span className="text-[15px] text-[#44546d]">No sign-ups for anyone. Students join with a six-letter code, or practice solo with an AI Chair and four AI delegates.</span>
         </div>
 
         <div className="mx-auto mt-14 max-w-[1040px] rounded-[28px] border border-[#dbe7f6] px-4 pb-5 pt-7 sm:px-6" style={{ background: DOTS }}>
@@ -339,6 +347,23 @@ export default function Home() {
               {busy ? "Opening…" : "Open my committee"}
             </button>
           </form>
+        </div>
+      </section>
+
+      {/* Practice solo with AI, as a green brick */}
+      <section id="practice" className="mx-auto max-w-[1160px] scroll-mt-6 px-4 pt-20 sm:px-6">
+        <div className="relative flex flex-wrap items-center gap-8 rounded-[30px] bg-[#15803d] px-5 py-10 text-white sm:px-10" style={{ boxShadow: "0 10px 0 #0d5527" }}>
+          <Studs color="#15803d" size="lg" />
+          <div className="min-w-0 flex-[1_1_380px]">
+            <h2 className="m-0 text-[clamp(36px,4.6vw,56px)] font-extrabold leading-[0.98] text-balance" style={{ fontFamily: "var(--display)" }}>No committee tonight? Practice with AI.</h2>
+            <p className="mt-3.5 text-xl text-[#dcfce7]">An AI Chair runs a full round with four AI delegates who argue their countries' real positions. You take part in every stage, from roll call and the agenda to caucuses, working papers, amendments and a roll call vote, then get personal feedback.</p>
+            <div className="mt-7"><BrickLink href="/practice" color="yellow">Start a practice round</BrickLink></div>
+          </div>
+          <ul className="m-0 min-w-0 flex-[1_1_300px] list-none space-y-2.5 rounded-[22px] bg-white p-6 text-lg text-[#10213a]" style={{ boxShadow: "0 8px 0 #0d5527" }}>
+            {[["🎙", "Speak aloud or type: the AI delegates hear you"], ["🔊", "AI delegates speak out loud, each with their own voice"], ["⏱", "A full round: about 25 minutes"], ["📝", "A score and tips from the AI Chair at the end"]].map(([icon, text]) => (
+              <li key={text} className="flex gap-3"><span aria-hidden>{icon}</span>{text}</li>
+            ))}
+          </ul>
         </div>
       </section>
 

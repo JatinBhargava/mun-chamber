@@ -27,6 +27,7 @@ export interface Member {
   online: boolean;
   placard: boolean; // placard raised (wants to be recognized)
   speeches: number; // times this member has held the floor
+  ai?: boolean; // played by Claude in a practice room
 }
 
 export interface Speaker {
@@ -185,6 +186,29 @@ export interface Committee {
   log: LogEntry[];
   awards: Award[];
   createdAt: number;
+  practice?: PracticeInfo; // set for AI practice rooms
+}
+
+// ---------- AI practice rooms ----------
+
+export type PracticeStage =
+  | "intro" | "rollcall" | "agenda" | "gsl" | "motion" | "modcaucus" | "unmod"
+  | "drafting" | "amendments" | "voting" | "adjourn" | "feedback" | "done";
+
+export interface PracticeFeedback {
+  score: number; // 1 to 10
+  headline: string;
+  strengths: string[];
+  improvements: string[];
+  procedureTips: string[];
+  bestMoment: string;
+}
+
+export interface PracticeInfo {
+  humanId: string;
+  stage: PracticeStage;
+  thinking: string | null; // member id of the AI currently writing, if any
+  feedback: PracticeFeedback | null;
 }
 
 /** What each browser receives: the committee plus only the chits it may see. */

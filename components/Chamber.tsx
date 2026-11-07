@@ -11,6 +11,7 @@ import JoinForm from "./JoinForm";
 import { ChitsPanel, FloorLog, MotionsPanel, RollPanel, SpeakersPanel } from "./Panels";
 import RoomMap from "./RoomMap";
 import { CLEAN_BLOCK, CLEAN_BLOCK_BG, LAYOUTS, themeStyle } from "@/lib/layouts";
+import { FeedbackCard, PracticeCoach, useAiVoices } from "./Practice";
 import Report from "./Report";
 import StageBar from "./StageBar";
 import { Badge, Button, Card, SHADOW } from "./ui";
@@ -32,8 +33,10 @@ export default function Chamber({ code }: { code: string }) {
     if (state.chairMic) list.push(state.chairId);
     return list;
   }, [state]);
-  const peers = useMemo(() => (state ? Object.values(state.members).filter((m) => m.online && m.id !== state.meId).map((m) => m.id) : []), [state]);
+  // AI participants have no browser, so there is no one to send audio to.
+  const peers = useMemo(() => (state ? Object.values(state.members).filter((m) => m.online && !m.ai && m.id !== state.meId).map((m) => m.id) : []), [state]);
   const voice = useVoice(state?.meId, publishers, peers);
+  const aiVoices = useAiVoices(state);
 
   if (status === "need-join") {
     return (
@@ -91,7 +94,9 @@ export default function Chamber({ code }: { code: string }) {
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
               <h1 className="truncate text-xl font-extrabold leading-tight" style={{ fontFamily: "var(--display)" }}>{state.name}</h1>
-              <span className="hidden sm:inline-flex"><Badge tone="un">{state.type === "SC" ? "Security Council" : state.type === "GA" ? "General Assembly" : "Committee"}</Badge></span>
+              <span className="hidden sm:inline-flex">
+                {state.practice ? <Badge tone="green">🤖 AI practice</Badge> : <Badge tone="un">{state.type === "SC" ? "Security Council" : state.type === "GA" ? "General Assembly" : "Committee"}</Badge>}
+              </span>
             </div>
             <p className="truncate text-xs text-muted">{state.agenda ? <>Agenda: {state.agenda}</> : <em>Agenda not yet set</em>}</p>
           </div>
@@ -100,10 +105,10 @@ export default function Chamber({ code }: { code: string }) {
             {listening.length > 0 && !voice.audioBlocked && (
               <span className="hidden md:inline-flex"><Badge tone="green">🔊 {listening.map((m) => m?.role === "chair" ? "Chair" : m?.country).join(", ")}</Badge></span>
             )}
-            <button onClick={copyInvite} className="flex h-8 items-center gap-1.5 rounded-lg border-2 border-fg bg-panel px-2 font-mono text-[13px] font-bold tracking-widest transition hover:bg-fg hover:text-white" title="Copy the invite link. People who open it go straight to this committee.">
+            {!state.practice && <button onClick={copyInvite} className="flex h-8 items-center gap-1.5 rounded-lg border-2 border-fg bg-panel px-2 font-mono text-[13px] font-bold tracking-widest transition hover:bg-fg hover:text-white" title="Copy the invite link. People who open it go straight to this committee.">
               {copied ? "Link copied" : code}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
-            </button>
+            </button>}
             <span className="hidden max-w-44 truncate sm:inline-flex"><Badge tone={chair ? "gold" : me?.role === "observer" ? "default" : "un"}>{identity}</Badge></span>
             <button
               onClick={() => { if (confirm("Leave this committee on this device?")) { clearSession(code); location.href = "/"; } }}
@@ -123,6 +128,8 @@ export default function Chamber({ code }: { code: string }) {
       {/* Phone order: room and controls, then the side panels, then the tabs. Desktop: tabs under the room, panels on the right. */}
       <div className="mx-auto grid max-w-[1400px] items-start gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-4 lg:py-4">
         <main className="min-w-0 space-y-3 lg:col-start-1 lg:row-start-1">
+          {state.practice && <FeedbackCard state={state} />}
+          {state.practice && <PracticeCoach state={state} voices={aiVoices.on} setVoices={aiVoices.set} />}
           <VoteBanner state={state} send={send} />
 
           <section aria-label={`The room: ${LAYOUTS.find((l) => l.id === state.layout)?.name ?? ""}`} className="overflow-hidden rounded-2xl border border-line bg-panel" style={SHADOW}>

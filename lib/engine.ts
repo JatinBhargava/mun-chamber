@@ -827,5 +827,5 @@ function sanitizeClauses(list: Clause[]): Clause[] {
 
 export function online(c: Committee, members: Iterable<string>) {
   const set = new Set(members);
-  for (const m of Object.values(c.members) as Member[]) m.online = set.has(m.id);
+  for (const m of Object.values(c.members) as Member[]) m.online = set.has(m.id) || !!m.ai;
 }

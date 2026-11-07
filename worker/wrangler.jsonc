@@ -11,7 +11,10 @@
   "vars": {
     // Comma-separated sites allowed to use this server, e.g. "https://mun-chamber.vercel.app".
     // "*" allows any site; lock it down once the frontend has its final address.
-    "ALLOWED_ORIGINS": "https://mun.ouratlas.co.in"
+    "ALLOWED_ORIGINS": "https://mun.ouratlas.co.in",
+    // AI practice rooms: how many can be started per day across the whole site.
+    // The Claude API key is a secret, not a var: npx wrangler secret put ANTHROPIC_API_KEY -c worker/wrangler.jsonc
+    "PRACTICE_DAILY_LIMIT": "30"
   },
   "observability": { "enabled": true },
   "dev": { "ip": "0.0.0.0", "port": 8787 }

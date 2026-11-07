@@ -5,19 +5,28 @@
 
 import { DurableObject } from "cloudflare:workers";
 import { act, createRoom, joinRoom, online, roomCode, tick, viewFor, type CreateParams, type JoinParams, type Room } from "../lib/engine";
+import { createPracticeRoom, practiceError, type PracticeParams } from "../lib/practice";
 import type { Action, Chit, Committee } from "../lib/types";
+import { AI } from "./ai";
+import { direct, newDirector, type DirectorState } from "./practice";
 
 interface Env {
   ROOMS: DurableObjectNamespace<CommitteeRoom>;
   ALLOWED_ORIGINS: string;
+  ANTHROPIC_API_KEY?: string; // secret: npx wrangler secret put ANTHROPIC_API_KEY
+  PRACTICE_DAILY_LIMIT?: string; // new AI practice rooms per day, across the whole site
+  AI_MOCK?: string; // "1": canned AI answers without an API key (local testing)
+  PRACTICE_SPEED?: string; // >1 shortens practice waits (local testing)
 }
+
+const aiReady = (env: Env) => !!env.ANTHROPIC_API_KEY || env.AI_MOCK === "1";
 
 const CODE = /^[A-Z0-9]{6}$/;
 const IDLE_MS = 24 * 3600 * 1000; // forget a committee a day after its last activity
 const MAX_MESSAGE = 1_000_000;
 
 type Reply = Record<string, unknown>;
-interface Saved { c: Committee; chits: Chit[]; tokens: [string, string][] }
+interface Saved { c: Committee; chits: Chit[]; tokens: [string, string][]; director?: DirectorState }
 interface Attachment { memberId?: string }
 
 /** Who may send audio right now: the delegate holding the floor, and the Chair when their mic is on. */
@@ -32,6 +41,9 @@ function publishers(room: Room): string[] {
 export class CommitteeRoom extends DurableObject<Env> {
   private room: Room | null = null;
   private alarmAt: number | null = null;
+  private director: DirectorState | null = null; // AI practice rooms only
+  private directing = false;
+  private ai: AI | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -39,7 +51,11 @@ export class CommitteeRoom extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
     ctx.blockConcurrencyWhile(async () => {
       const saved = await ctx.storage.get<Saved>("room");
-      if (saved) this.room = { c: saved.c, chits: saved.chits, tokens: new Map(saved.tokens) };
+      if (saved) {
+        this.room = { c: saved.c, chits: saved.chits, tokens: new Map(saved.tokens) };
+        // Rooms saved by an older version may lack newer director fields.
+        this.director = saved.director ? { ...newDirector(), ...saved.director } : null;
+      }
       this.alarmAt = await ctx.storage.getAlarm();
     });
   }
@@ -54,9 +70,29 @@ export class CommitteeRoom extends DurableObject<Env> {
     return { code, memberId: res.memberId, token: res.token };
   }
 
+  async createPractice(p: PracticeParams, code: string): Promise<Reply | null> {
+    if (this.room) return null;
+    const res = createPracticeRoom(p, code);
+    if ("error" in res) return res;
+    this.room = res.room;
+    this.director = newDirector();
+    await this.save();
+    return { code, memberId: res.memberId, token: res.token };
+  }
+
+  /** Counts new practice rooms per day across the site. Only used on the "__limits__" object. */
+  async takeDaily(limit: number): Promise<boolean> {
+    const key = `day:${new Date().toISOString().slice(0, 10)}`;
+    const used = (await this.ctx.storage.get<number>(key)) ?? 0;
+    if (used >= limit) return false;
+    await this.ctx.storage.put(key, used + 1);
+    return true;
+  }
+
   async peek(): Promise<Reply> {
     const room = this.room;
     if (!room) return { error: "No committee with that code." };
+    if (room.c.practice) return { error: "That's a private AI practice room. Start your own from the Practice page." };
     const taken = new Set(Object.values(room.c.members).map((m) => m.country));
     return { name: room.c.name, type: room.c.type, countries: room.c.countries.filter((x) => !taken.has(x.name)) };
   }
@@ -64,6 +100,7 @@ export class CommitteeRoom extends DurableObject<Env> {
   async join(p: JoinParams): Promise<Reply> {
     const room = this.room;
     if (!room) return { error: "No committee with that code. Check the code with your Chair." };
+    if (room.c.practice) return { error: "That's a private AI practice room. Start your own from the Practice page." };
     const res = joinRoom(room, { ...p, token: undefined }); // the join form always makes a new seat
     if ("error" in res) return res;
     await this.save();
@@ -92,6 +129,8 @@ export class CommitteeRoom extends DurableObject<Env> {
       // Rejoin with the token saved on this device.
       if (!room) return reply({ error: "No committee with that code. Check the code with your Chair." });
       const p = (msg.d ?? {}) as JoinParams;
+      if (room.c.practice && !(typeof p.token === "string" && room.tokens.has(p.token)))
+        return reply({ error: "That's a private AI practice room. Start your own from the Practice page." });
       const before = Object.keys(room.c.members).length;
       const res = joinRoom(room, { name: String(p.name ?? ""), role: "observer", token: typeof p.token === "string" ? p.token : undefined });
       if ("error" in res) return reply(res);
@@ -99,6 +138,7 @@ export class CommitteeRoom extends DurableObject<Env> {
       if (Object.keys(room.c.members).length !== before) await this.save();
       reply({ code: room.c.code, ...res });
       this.broadcast();
+      await this.poke(); // a practice room starts (or resumes) when the student is here
       return;
     }
 
@@ -124,7 +164,10 @@ export class CommitteeRoom extends DurableObject<Env> {
           }
         }
       }
-      if (!res.error) this.broadcast();
+      if (!res.error) {
+        this.broadcast();
+        await this.poke();
+      }
       return;
     }
 
@@ -155,6 +198,9 @@ export class CommitteeRoom extends DurableObject<Env> {
     if (tick(room)) {
       await this.save();
       this.broadcast();
+    }
+    if (this.director?.nextAt != null && this.director.nextAt <= Date.now()) {
+      await this.runDirector();
       return;
     }
     if (this.lastActivity() + IDLE_MS <= Date.now() && this.sockets().length === 0) {
@@ -172,10 +218,47 @@ export class CommitteeRoom extends DurableObject<Env> {
     const times = [this.lastActivity() + IDLE_MS];
     if (c.speaker && !c.speaker.paused && c.speaker.endsAt !== null) times.push(c.speaker.endsAt);
     if (c.caucus && !c.caucus.paused && c.caucus.endsAt !== null) times.push(c.caucus.endsAt);
+    if (this.director?.nextAt != null) times.push(this.director.nextAt);
     const at = Math.max(Date.now(), Math.min(...times));
     if (at === this.alarmAt) return;
     this.alarmAt = at;
     await this.ctx.storage.setAlarm(at);
+  }
+
+  // ---------- AI practice ----------
+
+  /** Something happened: let the director look again soon. */
+  private async poke() {
+    const d = this.director;
+    if (!d || this.room?.c.practice?.stage === "done") return;
+    const soon = Date.now() + 700;
+    if (d.nextAt === null || d.nextAt > soon) {
+      d.nextAt = soon;
+      await this.schedule();
+    }
+  }
+
+  private async runDirector() {
+    const room = this.room;
+    const d = this.director;
+    if (!room || !d || this.directing) return;
+    this.directing = true;
+    try {
+      this.ai ??= new AI(this.env.ANTHROPIC_API_KEY, this.env.AI_MOCK === "1");
+      await direct({
+        room, ai: this.ai,
+        speed: Math.max(1, Number(this.env.PRACTICE_SPEED) || 1),
+        studentOnline: () => this.sockets().some((s) => s.memberId === room.c.practice?.humanId),
+        broadcast: () => this.broadcast(),
+      }, d);
+    } catch (e) {
+      console.error("practice director failed", e);
+      d.nextAt = Date.now() + 5000;
+    } finally {
+      this.directing = false;
+    }
+    await this.save();
+    this.broadcast();
   }
 
   // ---------- helpers ----------
@@ -187,7 +270,7 @@ export class CommitteeRoom extends DurableObject<Env> {
 
   private async save() {
     const r = this.room!;
-    await this.ctx.storage.put("room", { c: r.c, chits: r.chits, tokens: [...r.tokens] } satisfies Saved);
+    await this.ctx.storage.put("room", { c: r.c, chits: r.chits, tokens: [...r.tokens], director: this.director ?? undefined } satisfies Saved);
     await this.schedule();
   }
 
@@ -248,6 +331,22 @@ export default {
         return v && typeof v === "object" ? (v as T) : null;
       } catch { return null; }
     };
+
+    if (action === "practice") {
+      const p = await body<PracticeParams>();
+      if (!p) return json({ error: "Bad request." }, 400);
+      if (!aiReady(env)) return json({ error: "AI practice isn't set up on this server yet." });
+      const problem = practiceError(p);
+      if (problem) return json({ error: problem });
+      const limit = Number(env.PRACTICE_DAILY_LIMIT) || 30;
+      if (!(await room("__limits__").takeDaily(limit))) return json({ error: "Today's practice rooms are all used up. Please try again tomorrow." });
+      for (let i = 0; i < 5; i++) {
+        const code = roomCode();
+        const res = await room(code).createPractice(p, code);
+        if (res) return json(res);
+      }
+      return json({ error: "Couldn't make a room code. Try again." }, 503);
+    }
 
     if (action === "create") {
       const p = await body<CreateParams>();
